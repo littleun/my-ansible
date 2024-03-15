@@ -1,0 +1,70 @@
+- name: Setup for nfs server
+  hosts: localhost
+  
+  tasks:
+    - name: make nfs_shared directory
+      file:
+        path: /root/nfs_shared
+        state: directory
+        mode: 0777
+
+    - name: configure /etc/exports
+      lineinfile:
+        path: /etc/exports
+        line: /root/nfs_shared 192.168.204.0/24(rw,sync,no_root_squash)
+
+    - name: Install NFS
+      yum:
+        name: nfs-utils
+        state: present
+
+    - name: nfs service start
+      service:
+        name: nfs-server
+        state: restarted
+        enabled: yes
+
+- name: Setup for nfs clients
+  hosts: centos
+  
+  tasks:
+    - name: make nfs_client directory
+      file:
+        path: /root/nfs
+        state: directory
+
+    - name: Install NFS
+      yum:
+        name: nfs-utils
+        state: present
+
+    - name: mount point directory as client
+      mount:
+        path: /root/nfs
+        src: 192.168.204.139:/root/nfs_shared
+        fstype: nfs
+        state: mounted
+
+- name: Setup for nfs clients U
+  hosts: ubuntu
+  
+  tasks:
+    - name: make nfs_client directory
+      file:
+        path: /root/nfs
+        state: directory
+
+    - name: Install NFS-U
+      apt:
+        pkg: nfs-common
+        state: present
+        update_cache: yes
+
+    - name: mount point directory as client
+      mount:
+        path: /root/nfs
+        src: 192.168.204.139:/root/nfs_shared
+        fstype: nfs
+        opts: nfsvers=3
+        state: mounted
+
